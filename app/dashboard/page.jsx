@@ -6,21 +6,29 @@ import SideNavBar from '../components/SideNav';
 import IndexPage from '../components/Swap';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // Change import statement to 'next/router'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+
+
 const supabase = createClientComponentClient();
 
-export default function Dashboard() {
-    const router=useRouter()
+const Dashboard = () => {
+  const router = useRouter();
   const [web3, setWeb3] = useState(null);
-  const getAccountAddress = localStorage.getItem('accountAddress');
   const [swapData, setSwapData] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    const getAccountAddress = localStorage.getItem('accountAddress');
+    if (getAccountAddress) {
+      fetchData(getAccountAddress);
+    }
+  }, []);
 
   const connectMetamask = async () => {
-    debugger;
     try {
-      if (window.ethereum) {
+      if (typeof window !== 'undefined' && window.ethereum) {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3Instance = new Web3(window.ethereum);
         setWeb3(web3Instance);
@@ -40,41 +48,38 @@ export default function Dashboard() {
     try {
       const URL = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3';
       const query = `
-    {
-  swaps(where: {
-    
-    sender: "{address}" 
-  }) {
-    sender
-    recipient
-    amount0
-    amount1
-    transaction {
-      id
-      blockNumber
-      gasUsed
-      gasPrice
-    }
-    timestamp
-    token0 {
-      id
-      symbol
-    }
-    token1 {
-      id
-      symbol
-    }
-  }
-}
-`;
-      const { data } = await axios.post(URL, { query: query });
+        {
+          swaps(where: { sender: "${address}" }) {
+            sender
+            recipient
+            amount0
+            amount1
+            transaction {
+              id
+              blockNumber
+              gasUsed
+              gasPrice
+            }
+            timestamp
+            token0 {
+              id
+              symbol
+            }
+            token1 {
+              id
+              symbol
+            }
+          }
+        }
+      `;
+      const { data } = await axios.post(URL, { query });
       setSwapData(data?.data?.swaps);
-      console.log('data', data?.data?.swaps);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
     setLoading(false);
   }
+
   const logout = async () => {
     Swal.fire({
       text: 'Are you sure to Log out',
@@ -88,20 +93,20 @@ export default function Dashboard() {
         await supabase.auth.signOut();
         setWeb3(null);
         localStorage.setItem('accountAddress', '');
-        router.push("/")
-       
+        router.push("/");
       } else {
         console.log('cancel');
       }
     });
   };
+
   return (
     <>
       <div className="page">
         <SideNavBar
           connectMetamask={connectMetamask}
           logout={logout}
-          getAccountAddress={getAccountAddress}
+          getAccountAddress={typeof window !== 'undefined' ? localStorage.getItem('accountAddress') : null} // Check if window is defined before accessing localStorage
         />
       </div>
       <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
@@ -114,3 +119,5 @@ export default function Dashboard() {
     </>
   );
 }
+
+export default Dashboard;
