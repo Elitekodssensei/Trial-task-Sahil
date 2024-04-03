@@ -43,7 +43,7 @@ export default function Dashboard() {
     {
   swaps(where: {
     
-    sender: "0xe592427a0aece92de3edee1f18e0157c05861564" 
+    sender: "{address}" 
   }) {
     sender
     recipient
